@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Messagerie Instantannée</title>
+    </head>
+    <style>
+        html {
+            box-sizing: border-box;
+            overflow-x: hidden;
+            overflow-y: scroll;
+            width: 100%;
+            height: 100%;
+        }
+        *, ::before, ::after {
+            box-sizing: inherit;
+        }
+        body, button, html, input, textarea{
+            font-size: 15px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+            text-rendering: optimizeLegibility;
+            line-height: 1.5;
+            margin:0;
+            padding: 0;
+            color:#444;
+        }
+        form{
+            position: relative;
+        }
+        input[type=text]{
+            border: none;
+            padding: 8px 86px 8px 14px;
+            background: #eee;
+            display: inline-block;
+            width: 100%;
+            outline:none;
+        }
+        input[type=submit]{
+            width: auto;
+            display: inline-block;
+            padding: 8px 10px;
+            background: #5689DB;
+            border: none;
+            position: absolute;
+            right: 0;
+            top: 0;
+            color: #fff;
+            cursor: pointer;
+            overflow: hidden;
+            text-align: center;
+            outline:none;
+        }
+        .wrapper{
+            width: 100%;
+            max-width: 1020px;
+            padding: 0 20px;
+            margin:auto;
+        }
+        #window{
+            border: 1px solid #eee;
+            display: block;
+            height: 100%;
+            width: 100%;
+        }
+        #content{
+            display: inline-block;
+            width: 70%;
+            vertical-align: top;
+        }
+        #sidebar{
+            display: inline-block;
+            width: 29%;
+            vertical-align: top;
+            height: auto;
+        }
+        #chat{
+            height: 400px;
+            overflow-y: scroll;
+            margin: 0;
+            padding: 20px;
+            list-style-type: none;
+        }
+        #users{
+            height: 100%;
+            overflow-y: scroll;
+            margin: 0;
+            padding: 20px;
+            list-style-type: none;
+        }
+        #count{
+            font-weight: 700;
+            text-align: center;
+            padding: 20px;
+        }
+        .bulle{
+            clear: both;
+        }
+        .bulle + .bulle{
+            padding-top:10px;
+        }
+        .left{
+            background: #5689DB;
+            color:#FFF;
+            float:left;
+        }
+        .right{
+            background: #EEE;
+            color:#555;
+            float:right;
+        }
+        .left, .right{
+            position: relative;
+            border-radius: 20px;
+            max-width: 200px;
+            padding: 8px 14px;
+            overflow-x:hidden;
+        }
+    </style>
+    <body>
+        <div class="wrapper">
+            <h1>Messagerie Instantannée</h1>
+            <div id="window">
+                <div id="content">
+                    <ul id="chat"></ul>
+                    <form action="/" method="post" name="form">
+                        <input type="text" name="message" placeholder="Message" autofocus required>
+                        <input type="submit" value="Envoyer">
+                    </form>
+                </div>
+                <div id="sidebar">
+                    <div id="count"></div>
+                    <ul id="users"></div>
+                </div>
+            </div>
+        </div>
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+            function addMessage(message, user){
+                var ul = document.getElementById("chat"),
+                    li = document.createElement('li');
+                li.className = "bulle";
+                if(user == pseudo){
+                    li.innerHTML = '<span class="right">'+message+'</span>';
+                }
+                else{
+                    li.innerHTML = '<span class="left">'+user+" : "+message+'</span>';
+                }
+                ul.appendChild(li);
+                ul.scrollTop = ul.scrollHeight; //scroll window to bottom
+            }
+            function addUser(user){
+                var ul = document.getElementById("users"),
+                    li = document.createElement('li');
+                if(user == pseudo){
+                    li.innerHTML = user+" (vous)";
+                }
+                else{
+                    li.innerHTML = user;
+                }
+                ul.appendChild(li);
+            }
+
+            var socket = io.connect('http://localhost:8080'),
+                pseudo = prompt('Quel est votre pseudo ?');
+
+            socket.emit('new_user', pseudo);
+
+            socket.on('new_message', function(data) {
+                addMessage(data.message, data.pseudo);
+            });
+
+            document.form.addEventListener("submit", function(e){
+                e.preventDefault();
+                addMessage(document.form.message.value, pseudo);
+                socket.emit('new_message', document.form.message.value);
+                document.form.message.value = ""; // reset input
+            });
+
+            socket.on('online_users', function(userlist) {
+                document.getElementById("users").innerHTML = "";
+                userlist.forEach(function(user){
+                    addUser(user);
+                });
+                document.getElementById("count").innerHTML = "Utilisateurs ("+userlist.length+")";
+            });
+        </script>
+    </body>
+</html>
